@@ -9,6 +9,7 @@
 
 namespace david63\bulkuseradd\controller;
 
+use Exception;
 use phpbb\config\config;
 use phpbb\cache\service;
 use phpbb\request\request;
@@ -308,15 +309,30 @@ class acp_upload_controller implements acp_upload_interface
 					}
 					else // We are OK to process the data
 					{
+						// Create random 16-character password
+						$passwordLength = 16;
+						$password = '';
+						try
+						{
+							$password = bin2hex(random_bytes($passwordLength / 2));
+						}
+						catch (Exception $e)
+						{
+							$validPasswordCharacters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`~!@#$%^&*()_-+=[]{}\|;:\'",<.>/?';
+							for ($i = 0; $i < $passwordLength; $i++)
+							{
+								$index = rand(0, strlen($validPasswordCharacters) - 1);
+								$password .= $validPasswordCharacters[$index];
+							}
+						}
+
 						$user_row = array(
 							'username'		=> $data[$username_column],
-							'user_password'	=> $this->passwords_manager->hash($data[$username_column]),
+							'user_password'	=> $this->passwords_manager->hash($password),
 							'user_email'	=> $data[$email_column],
 							'group_id'		=> $group_id,
 							'user_type'		=> USER_NORMAL,
 							'user_new'		=> 1,
-							// Set this to force password change when logging in
-							'user_bulk_add'	=> 1,
 						);
 
 						//Let's deal with the start date
